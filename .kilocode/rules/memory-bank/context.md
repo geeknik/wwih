@@ -4,7 +4,7 @@
 
 **Template Status**: ✅ Ready for development
 
-The template is a clean Next.js 16 starter with TypeScript and Tailwind CSS 4. It's ready for AI-assisted expansion to build any type of application.
+The template is a Next.js 16 starter with TypeScript and Tailwind CSS 4, featuring a "WWIH" (What We Imagine Here) dark pattern demo component.
 
 ## Recently Completed
 
@@ -14,6 +14,8 @@ The template is a clean Next.js 16 starter with TypeScript and Tailwind CSS 4. I
 - [x] ESLint configuration
 - [x] Memory bank documentation
 - [x] Recipe system for common features
+- [x] WWIH dark pattern demo component
+- [x] Fixed React hydration mismatch in WWIH component
 
 ## Current Structure
 
@@ -22,15 +24,28 @@ The template is a clean Next.js 16 starter with TypeScript and Tailwind CSS 4. I
 | `src/app/page.tsx` | Home page | ✅ Ready |
 | `src/app/layout.tsx` | Root layout | ✅ Ready |
 | `src/app/globals.css` | Global styles | ✅ Ready |
+| `src/components/WWIH.tsx` | Dark pattern demo | ✅ Ready |
+| `src/lib/chaos.ts` | Chaos/random utilities | ✅ Ready |
+| `src/lib/friction.ts` | Friction pattern utilities | ✅ Ready |
+| `src/lib/telemetry.ts` | Tracking utilities | ✅ Ready |
 | `.kilocode/` | AI context & recipes | ✅ Ready |
 
 ## Current Focus
 
-The template is ready. Next steps depend on user requirements:
+The template is ready. The WWIH component demonstrates various dark UX patterns.
 
-1. What type of application to build
-2. What features are needed
-3. Design/branding preferences
+## Key Technical Details
+
+### Hydration Fix (2026-02-18)
+
+The WWIH component had a hydration mismatch error because random values (`Math.random()`) were being generated during initial render, causing different values on server vs client.
+
+**Solution**: Initialize all random values with deterministic defaults, then randomize them in a `useEffect` with `setTimeout` after hydration completes:
+- `movingButtonPositions` - starts at `{x: 0, y: 0}`, randomized after mount
+- `navItems` - starts in original order, shuffled after mount
+- `heroTitle` - starts with first title, randomized after mount
+- `requiredFields` - starts with all fields, randomized after mount
+- `captchaEmojis` - starts with same emoji, randomized after mount
 
 ## Quick Start Guide
 
@@ -84,4 +99,5 @@ export async function GET() {
 
 | Date | Changes |
 |------|---------|
+| 2026-02-18 | Fixed hydration mismatch in WWIH component by deferring random values to useEffect |
 | Initial | Template created with base setup |

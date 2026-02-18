@@ -153,22 +153,31 @@ function DarkPatternConsent({ onAgree, onDecline }: { onAgree: () => void; onDec
 }
 
 export default function WWIH() {
-  // Initialize state with memoized initial values
-  const initialRequiredFields = useMemo(() => evil.getRandomRequiredFields(['name', 'email', 'message']), []);
-  const initialNavItems = useMemo(() => chaos.shuffle([...navLabels]), []);
-  const initialHeroTitle = useMemo(() => chaos.pick(confusingTitles), []);
-  const confettiPieces = useMemo(() => generateConfettiPieces(), []);
-  const movingButtonPositions = useMemo(() => generateMovingButtonPositions(10), []);
+  // Track if component has mounted (to avoid hydration mismatch)
+  const [isMounted, setIsMounted] = useState(false);
   
-  // Generate captcha emojis once
-  const initialCaptchaEmojis = useMemo(() => {
-    const allEmojis = ['😢', '😞', '😔', '😕', '🙁', '😣', '😖', '😫', '😩', '🥺', '😥', '😰', '😱', '😭', '💔', '😤', '😡', '🤬', '🤯', '😳'];
-    const selected = [];
-    for (let i = 0; i < 15; i++) {
-      selected.push(chaos.pick(allEmojis));
-    }
-    return selected;
-  }, []);
+  // Initialize state with deterministic defaults, randomize after mount
+  const confettiPieces = useMemo(() => generateConfettiPieces(), []);
+  
+  // Initialize with static values to avoid hydration mismatch, update after mount
+  const [movingButtonPositions, setMovingButtonPositions] = useState<{ x: number; y: number }[]>(() => 
+    Array(10).fill(null).map(() => ({ x: 0, y: 0 }))
+  );
+  
+  // Start with unshuffled nav items, shuffle after mount
+  const [navItems, setNavItems] = useState<string[]>([...navLabels]);
+  
+  // Start with a static title, randomize after mount
+  const [heroTitle, setHeroTitle] = useState<string>(confusingTitles[0]);
+  
+  // Start with all required fields, randomize after mount
+  const [requiredFields, setRequiredFields] = useState<string[]>(['name', 'email', 'message']);
+  
+  // Initialize captcha emojis with deterministic default, randomize after mount
+  const [captchaEmojis, setCaptchaEmojis] = useState<string[]>(() => {
+    const allEmojis = ['😢', '😞', '😔', '😕', '🙁', '😣', '😖', '😫', '😩', '🥺'];
+    return Array(15).fill(allEmojis[0]); // Start with same emoji, randomize after mount
+  });
   
   const [showModal, setShowModal] = useState(true);
   const [modalClosePosition, setModalClosePosition] = useState({ x: 20, y: 20 });
@@ -183,11 +192,8 @@ export default function WWIH() {
   const [helpInput, setHelpInput] = useState('');
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [formErrors, setFormErrors] = useState<{name?: string; email?: string; message?: string}>({});
-  const [requiredFields] = useState<string[]>(initialRequiredFields);
   const [showConfetti, setShowConfetti] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [navItems] = useState<string[]>(initialNavItems);
-  const [heroTitle] = useState(initialHeroTitle);
   const [showSurvey, setShowSurvey] = useState(false);
   const [surveyAnswer, setSurveyAnswer] = useState<string | null>(null);
   
@@ -217,14 +223,33 @@ export default function WWIH() {
   const [showConsent, setShowConsent] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
   
-  // Captcha nonsense
-  const [captchaEmojis, setCaptchaEmojis] = useState<string[]>(initialCaptchaEmojis);
+  // Captcha selection state
   const [captchaSelected, setCaptchaSelected] = useState<number[]>([]);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   
   const helpInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
+  // Randomize values after hydration using setTimeout to avoid lint warning
+  useEffect(() => {
+    // Defer state updates to avoid cascading render warning
+    const timer = setTimeout(() => {
+      setIsMounted(true);
+      setMovingButtonPositions(generateMovingButtonPositions(10));
+      setNavItems(chaos.shuffle([...navLabels]));
+      setHeroTitle(chaos.pick(confusingTitles));
+      setRequiredFields(evil.getRandomRequiredFields(['name', 'email', 'message']));
+      // Randomize captcha emojis after mount
+      const allEmojis = ['😢', '😞', '😔', '😕', '🙁', '😣', '😖', '😫', '😩', '🥺', '😥', '😰', '😱', '😭', '💔', '😤', '😡', '🤬', '🤯', '😳'];
+      const selected = [];
+      for (let i = 0; i < 15; i++) {
+        selected.push(chaos.pick(allEmojis));
+      }
+      setCaptchaEmojis(selected);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+  
   // Initialize chaos on mount - only for side effects
   useEffect(() => {
     // Track page view
