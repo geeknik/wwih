@@ -1,3 +1,9 @@
+import WWIH from "@/components/WWIH";
+
 export default function Home() {
-  return <main className="min-h-screen bg-neutral-900" />;
+  return (
+    <div>
+      <WWIH />
+    </div>
+  );
 }
