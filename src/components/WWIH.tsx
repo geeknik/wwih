@@ -156,9 +156,6 @@ export default function WWIH() {
   // Track if component has mounted (to avoid hydration mismatch)
   const [isMounted, setIsMounted] = useState(false);
   
-  // Initialize state with deterministic defaults, randomize after mount
-  const confettiPieces = useMemo(() => generateConfettiPieces(), []);
-  
   // Initialize with static values to avoid hydration mismatch, update after mount
   const [movingButtonPositions, setMovingButtonPositions] = useState<{ x: number; y: number }[]>(() => 
     Array(10).fill(null).map(() => ({ x: 0, y: 0 }))
@@ -178,6 +175,11 @@ export default function WWIH() {
     const allEmojis = ['😢', '😞', '😔', '😕', '🙁', '😣', '😖', '😫', '😩', '🥺'];
     return Array(15).fill(allEmojis[0]); // Start with same emoji, randomize after mount
   });
+  
+  // Initialize confetti with deterministic defaults, regenerate after mount
+  const [confettiPieces, setConfettiPieces] = useState(() => 
+    Array(100).fill(null).map(() => ({ left: 50, color: '#ff0000', duration: 2, delay: 0 }))
+  );
   
   const [showModal, setShowModal] = useState(true);
   const [modalClosePosition, setModalClosePosition] = useState({ x: 20, y: 20 });
@@ -246,6 +248,8 @@ export default function WWIH() {
         selected.push(chaos.pick(allEmojis));
       }
       setCaptchaEmojis(selected);
+      // Randomize confetti pieces after mount
+      setConfettiPieces(generateConfettiPieces());
     }, 0);
     return () => clearTimeout(timer);
   }, []);
