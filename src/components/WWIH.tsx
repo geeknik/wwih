@@ -181,6 +181,16 @@ export default function WWIH() {
     Array(100).fill(null).map(() => ({ left: 50, color: '#ff0000', duration: 2, delay: 0 }))
   );
   
+  // Initialize breadcrumb label with deterministic default, randomize after mount
+  const [breadcrumbLabel, setBreadcrumbLabel] = useState<string>(navLabels[0]);
+  
+  // Initialize random page labels for fake page display
+  const [fakePageLabel, setFakePageLabel] = useState<string>('store');
+  
+  // Initialize random wizard button labels
+  const [wizardPrevLabel, setWizardPrevLabel] = useState<string>('Go Back');
+  const [wizardNextLabel, setWizardNextLabel] = useState<string>('Continue (Mistake)');
+  
   const [showModal, setShowModal] = useState(true);
   const [modalClosePosition, setModalClosePosition] = useState({ x: 20, y: 20 });
   const [currentPage, setCurrentPage] = useState('home');
@@ -250,6 +260,13 @@ export default function WWIH() {
       setCaptchaEmojis(selected);
       // Randomize confetti pieces after mount
       setConfettiPieces(generateConfettiPieces());
+      // Randomize breadcrumb label after mount
+      setBreadcrumbLabel(chaos.pick(navLabels));
+      // Randomize fake page label after mount
+      setFakePageLabel(chaos.pick(['store', 'blog', 'FAQ', 'contact', 'services']));
+      // Randomize wizard button labels after mount
+      setWizardPrevLabel(chaos.chance(50) ? 'Previous (Maybe)' : 'Go Back');
+      setWizardNextLabel(chaos.chance(50) ? 'Next (If You Dare)' : 'Continue (Mistake)');
     }, 0);
     return () => clearTimeout(timer);
   }, []);
@@ -593,7 +610,7 @@ export default function WWIH() {
             <p style={{ color: '#00ffff', fontSize: '20px', textAlign: 'center' }}>
               This is the {currentPage} page. Or is it? 
               <br /><br />
-              <em style={{ color: '#ff0000' }}>The navigation lied to you. This is actually a {chaos.pick(['store', 'blog', 'FAQ', 'contact', 'services'])} page pretending to be {currentPage}.</em>
+              <em style={{ color: '#ff0000' }}>The navigation lied to you. This is actually a {fakePageLabel} page pretending to be {currentPage}.</em>
             </p>
             <div style={{ textAlign: 'center', marginTop: '40px' }}>
               <button 
@@ -775,13 +792,13 @@ export default function WWIH() {
                 onClick={handlePrevWizardStep}
                 disabled={wizardStep === 0}
               >
-                {chaos.chance(50) ? 'Previous (Maybe)' : 'Go Back'}
+                {wizardPrevLabel}
               </button>
               <button 
                 className="wizard-btn wizard-next"
                 onClick={nextWizardStep}
               >
-                {chaos.chance(50) ? 'Next (If You Dare)' : 'Continue (Mistake)'}
+                {wizardNextLabel}
               </button>
             </div>
           </div>
@@ -1235,7 +1252,7 @@ export default function WWIH() {
         <span className="breadcrumb-separator">›</span>
         <span style={{ color: '#666' }}>Nowhere</span>
         <span className="breadcrumb-separator">›</span>
-        <span style={{ color: '#ffff00' }}>{chaos.pick(navLabels)}</span>
+        <span style={{ color: '#ffff00' }}>{breadcrumbLabel}</span>
       </div>
       
       {/* Main Content */}
