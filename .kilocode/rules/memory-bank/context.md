@@ -38,14 +38,19 @@ The template is ready. The WWIH component demonstrates various dark UX patterns.
 
 ### Hydration Fix (2026-02-18)
 
-The WWIH component had a hydration mismatch error because random values (`Math.random()`) were being generated during initial render, causing different values on server vs client.
+The WWIH component had hydration mismatch errors because random values (`Math.random()`, `chaos.pick()`, `chaos.chance()`) were being called during initial render, causing different values on server vs client.
 
-**Solution**: Initialize all random values with deterministic defaults, then randomize them in a `useEffect` with `setTimeout` after hydration completes:
+**Solution**: Initialize all random values with deterministic defaults using `useState`, then randomize them in a `useEffect` with `setTimeout` after hydration completes:
 - `movingButtonPositions` - starts at `{x: 0, y: 0}`, randomized after mount
 - `navItems` - starts in original order, shuffled after mount
 - `heroTitle` - starts with first title, randomized after mount
 - `requiredFields` - starts with all fields, randomized after mount
 - `captchaEmojis` - starts with same emoji, randomized after mount
+- `confettiPieces` - starts with static values, randomized after mount
+- `breadcrumbLabel` - starts with first nav label, randomized after mount
+- `fakePageLabel` - starts with 'store', randomized after mount
+- `wizardPrevLabel` - starts with 'Go Back', randomized after mount
+- `wizardNextLabel` - starts with 'Continue (Mistake)', randomized after mount
 
 ## Quick Start Guide
 
