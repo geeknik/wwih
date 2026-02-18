@@ -16,6 +16,11 @@ The template is a Next.js 16 starter with TypeScript and Tailwind CSS 4, featuri
 - [x] Recipe system for common features
 - [x] WWIH dark pattern demo component
 - [x] Fixed React hydration mismatch in WWIH component
+- [x] Added cursor betrayal patterns (dodging buttons, label swapping)
+- [x] Added tiny moving hitboxes with random positions
+- [x] Enhanced misroutes with route pinball effect
+- [x] Enhanced loop traps with rapid page bouncing
+- [x] Added disappearing buttons and ghost buttons
 
 ## Current Structure
 
@@ -24,15 +29,15 @@ The template is a Next.js 16 starter with TypeScript and Tailwind CSS 4, featuri
 | `src/app/page.tsx` | Home page | ✅ Ready |
 | `src/app/layout.tsx` | Root layout | ✅ Ready |
 | `src/app/globals.css` | Global styles | ✅ Ready |
-| `src/components/WWIH.tsx` | Dark pattern demo | ✅ Ready |
+| `src/components/WWIH.tsx` | Dark pattern demo | ✅ Enhanced |
 | `src/lib/chaos.ts` | Chaos/random utilities | ✅ Ready |
 | `src/lib/friction.ts` | Friction pattern utilities | ✅ Ready |
-| `src/lib/telemetry.ts` | Tracking utilities | ✅ Ready |
+| `src/lib/telemetry.ts` | Tracking utilities | ✅ Enhanced |
 | `.kilocode/` | AI context & recipes | ✅ Ready |
 
 ## Current Focus
 
-The template is ready. The WWIH component demonstrates various dark UX patterns.
+The WWIH component now features enhanced dark patterns including cursor betrayal, route pinball, and multiple new button types.
 
 ## Key Technical Details
 
@@ -51,6 +56,28 @@ The WWIH component had hydration mismatch errors because random values (`Math.ra
 - `fakePageLabel` - starts with 'store', randomized after mount
 - `wizardPrevLabel` - starts with 'Go Back', randomized after mount
 - `wizardNextLabel` - starts with 'Continue (Mistake)', randomized after mount
+
+### New Dark Patterns (2026-02-18)
+
+**Cursor Betrayal**:
+- `dodgingButtonPos` - Accept button that dodges cursor on hover (60% chance)
+- `labelsSwapped` - Accept/Reject labels swap on hover (40% chance with cooldown)
+
+**Tiny Hitbox**:
+- `tinyHitboxPos` - 20px button that moves randomly every 2s, sometimes disappears
+
+**Disappearing Buttons**:
+- `disappearingBtnVisible` - Button that appears/disappears every 3s
+- `ghostButtonPos` - Faint ghost button that moves every 1.5s
+
+**Route Pinball**:
+- After 2+ back attempts, triggers rapid page changes (pinball effect)
+- Number of bounces scales with back attempt count
+
+**Enhanced Misroutes**:
+- Misroute chance increased from 30% to 45%
+- Navigation history tracked for loop detection
+- `pinballCount` tracked in telemetry
 
 ## Quick Start Guide
 
@@ -104,5 +131,6 @@ export async function GET() {
 
 | Date | Changes |
 |------|---------|
+| 2026-02-18 | Added cursor betrayal, tiny hitboxes, disappearing buttons, route pinball, enhanced misroutes |
 | 2026-02-18 | Fixed hydration mismatch in WWIH component by deferring random values to useEffect |
 | Initial | Template created with base setup |

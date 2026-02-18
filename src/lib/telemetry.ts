@@ -4,7 +4,7 @@
  */
 
 interface RageEvent {
-  type: 'rage-click' | 'back-attempt' | 'mouse-shake' | 'help-click' | 'form-fail' | 'loop' | 'page-view';
+  type: 'rage-click' | 'back-attempt' | 'mouse-shake' | 'help-click' | 'form-fail' | 'loop' | 'page-view' | 'cursor-betrayal' | 'label-swap' | 'tiny-hitbox' | 'disappearing-btn' | 'ghost-btn';
   timestamp: number;
   page: string;
   details?: string;
@@ -20,6 +20,11 @@ interface RageMetrics {
   helpClicks: number;
   formFailures: number;
   loops: number;
+  cursorBetrayals: number;
+  labelSwaps: number;
+  tinyHitboxClicks: number;
+  disappearingBtnClicks: number;
+  ghostBtnClicks: number;
   lastPages: string[];
 }
 
@@ -43,6 +48,11 @@ class RageTelemetry {
       helpClicks: 0,
       formFailures: 0,
       loops: 0,
+      cursorBetrayals: 0,
+      labelSwaps: 0,
+      tinyHitboxClicks: 0,
+      disappearingBtnClicks: 0,
+      ghostBtnClicks: 0,
       lastPages: []
     };
     
@@ -154,6 +164,21 @@ class RageTelemetry {
       case 'loop':
         this.metrics.loops++;
         break;
+      case 'cursor-betrayal':
+        this.metrics.cursorBetrayals++;
+        break;
+      case 'label-swap':
+        this.metrics.labelSwaps++;
+        break;
+      case 'tiny-hitbox':
+        this.metrics.tinyHitboxClicks++;
+        break;
+      case 'disappearing-btn':
+        this.metrics.disappearingBtnClicks++;
+        break;
+      case 'ghost-btn':
+        this.metrics.ghostBtnClicks++;
+        break;
     }
     
     // Keep only last 1000 events
@@ -189,6 +214,11 @@ class RageTelemetry {
     score += this.metrics.helpClicks * 20;
     score += this.metrics.formFailures * 25;
     score += this.metrics.loops * 30;
+    score += this.metrics.cursorBetrayals * 15;
+    score += this.metrics.labelSwaps * 10;
+    score += this.metrics.tinyHitboxClicks * 50; // Rare achievement!
+    score += this.metrics.disappearingBtnClicks * 20;
+    score += this.metrics.ghostBtnClicks * 5;
     score += (events - this.metrics.pageViews) * 2;
     
     // Time penalty - more time = more rage
@@ -235,6 +265,11 @@ class RageTelemetry {
       helpClicks: 0,
       formFailures: 0,
       loops: 0,
+      cursorBetrayals: 0,
+      labelSwaps: 0,
+      tinyHitboxClicks: 0,
+      disappearingBtnClicks: 0,
+      ghostBtnClicks: 0,
       lastPages: []
     };
     try {

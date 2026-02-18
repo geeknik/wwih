@@ -235,6 +235,26 @@ export default function WWIH() {
   const [showConsent, setShowConsent] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
   
+  // Cursor betrayal - buttons that dodge cursor
+  const [dodgingButtonPos, setDodgingButtonPos] = useState({ x: 0, y: 0 });
+  const [isDodging, setIsDodging] = useState(false);
+  
+  // Label swapping - Accept/Reject swap
+  const [labelsSwapped, setLabelsSwapped] = useState(false);
+  const [swapCooldown, setSwapCooldown] = useState(false);
+  
+  // Tiny moving hitboxes
+  const [tinyHitboxPos, setTinyHitboxPos] = useState({ x: 50, y: 50 });
+  const [tinyHitboxVisible, setTinyHitboxVisible] = useState(true);
+  
+  // Route pinball - track navigation history for loops
+  const [navHistory, setNavHistory] = useState<string[]>([]);
+  const [pinballCount, setPinballCount] = useState(0);
+  
+  // Disappearing buttons
+  const [disappearingBtnVisible, setDisappearingBtnVisible] = useState(true);
+  const [ghostButtonPos, setGhostButtonPos] = useState({ x: 0, y: 0 });
+  
   // Captcha selection state
   const [captchaSelected, setCaptchaSelected] = useState<number[]>([]);
   const [captchaVerified, setCaptchaVerified] = useState(false);
@@ -286,7 +306,7 @@ export default function WWIH() {
     };
     window.addEventListener('wwih:navigate', handleNavigate);
     
-    // Back button sabotage
+    // Back button sabotage with route pinball
     const handlePopState = (e: PopStateEvent) => {
       e.preventDefault();
       backAttemptsRef.current += 1;
@@ -296,6 +316,23 @@ export default function WWIH() {
       
       // Push state again to prevent going back
       window.history.pushState({}, '', window.location.href);
+      
+      // Route pinball - after multiple attempts, randomly bounce around
+      if (currentAttempts > 2) {
+        const randomPages = ['about', 'faq', 'store', 'contact', 'wizard', 'survey', 'telemetry'];
+        const bounceCount = Math.min(currentAttempts - 2, 5);
+        
+        // Pinball effect - rapid page changes
+        for (let i = 0; i < bounceCount; i++) {
+          setTimeout(() => {
+            const randomPage = chaos.pick(randomPages);
+            setCurrentPage(randomPage);
+            setPinballCount(prev => prev + 1);
+          }, i * 300);
+        }
+        
+        telemetry.trackEvent('loop', `Route pinball triggered: ${bounceCount} bounces`);
+      }
       
       // Show modal with fake confirmation
       setShowBackModal(true);
@@ -361,6 +398,55 @@ export default function WWIH() {
       };
     }
   }, [isMuted]);
+  
+  // Cursor betrayal - button dodges cursor
+  useEffect(() => {
+    if (isDodging) {
+      const timer = setTimeout(() => {
+        setDodgingButtonPos({
+          x: chaos.range(-150, 150),
+          y: chaos.range(-80, 80)
+        });
+        setIsDodging(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isDodging]);
+  
+  // Tiny hitbox random movement
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTinyHitboxPos({
+        x: chaos.range(10, 90),
+        y: chaos.range(10, 90)
+      });
+      // Randomly hide the tiny button
+      if (chaos.chance(20)) {
+        setTinyHitboxVisible(false);
+        setTimeout(() => setTinyHitboxVisible(true), chaos.range(500, 2000));
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Disappearing button timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDisappearingBtnVisible(chaos.chance(70));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Ghost button movement
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGhostButtonPos({
+        x: chaos.range(-50, 50),
+        y: chaos.range(-30, 30)
+      });
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
   
   // Play hover sound
   const playHoverSound = useCallback(() => {
@@ -443,16 +529,39 @@ export default function WWIH() {
 
   // Navigation with misdirection
   const handleNavClick = useCallback((label: string) => {
-    // 30% chance to misdirect
-    if (chaos.chance(30)) {
+    // Track navigation history for pinball
+    setNavHistory(prev => [...prev.slice(-5), label]);
+    
+    // 45% chance to misdirect (increased from 30%)
+    if (chaos.chance(45)) {
       const misdirected = evil.getMisdirection(label);
       setCurrentPage(misdirected.toLowerCase());
       telemetry.trackEvent('loop', `Misdirected from ${label} to ${misdirected}`);
+      setPinballCount(prev => prev + 1);
     } else {
       setCurrentPage(label.toLowerCase());
     }
     telemetry.trackPageView(currentPage);
   }, [currentPage]);
+  
+  // Cursor betrayal - dodge cursor on hover
+  const handleDodgeButtonHover = useCallback(() => {
+    if (chaos.chance(60)) { // 60% chance to dodge
+      setIsDodging(true);
+      telemetry.trackEvent('cursor-betrayal', 'Button dodged cursor');
+    }
+    playHoverSound();
+  }, [playHoverSound]);
+  
+  // Label swapping for Accept/Reject buttons
+  const handleSwapLabels = useCallback(() => {
+    if (!swapCooldown && chaos.chance(40)) {
+      setLabelsSwapped(prev => !prev);
+      setSwapCooldown(true);
+      telemetry.trackEvent('label-swap', 'Accept/Reject labels swapped');
+      setTimeout(() => setSwapCooldown(false), 1000);
+    }
+  }, [swapCooldown]);
 
   // Wizard navigation
   const nextWizardStep = useCallback(() => {
@@ -920,12 +1029,17 @@ export default function WWIH() {
               <span className="telemetry-stat-value">{metrics.loops}</span>
             </div>
             
+            <div className="telemetry-stat" style={{ background: '#330000', border: '2px solid #ff0000' }}>
+              <span className="telemetry-stat-label">Route Pinball Count</span>
+              <span className="telemetry-stat-value">{pinballCount}</span>
+            </div>
+            
             <div className="rage-score">
-              {telemetry.getRageScore()}
+              {telemetry.getRageScore() + pinballCount * 10}
             </div>
             
             <p style={{ textAlign: 'center', color: '#ff0000', fontSize: '18px' }}>
-              RAGE SCORE
+              RAGE SCORE (+ pinball bonus)
             </p>
             
             <div style={{ textAlign: 'center', marginTop: '30px' }}>
@@ -934,6 +1048,7 @@ export default function WWIH() {
                 onClick={() => {
                   telemetry.reset();
                   setCurrentPage('home');
+                  setPinballCount(0);
                 }}
               >
                 Suffer Again
@@ -1312,6 +1427,186 @@ export default function WWIH() {
       >
         Click Me!
       </div>
+      
+      {/* Cursor Betrayal - Dodging Accept Button */}
+      <div 
+        className="dodging-btn-container"
+        style={{
+          position: 'fixed',
+          bottom: '120px',
+          left: '50%',
+          transform: `translate(calc(-50% + ${dodgingButtonPos.x}px), ${dodgingButtonPos.y}px)`,
+          zIndex: 1000
+        }}
+      >
+        <button
+          className="btn-hostile dodging-accept-btn"
+          style={{
+            background: labelsSwapped ? '#ff0000' : '#00ff00',
+            color: '#000',
+            padding: '15px 40px',
+            fontSize: '18px',
+            border: '4px solid #fff',
+            cursor: 'pointer',
+            transition: isDodging ? 'none' : 'transform 0.1s ease'
+          }}
+          onMouseEnter={handleDodgeButtonHover}
+          onClick={() => {
+            if (labelsSwapped) {
+              // They thought they were accepting but actually declining
+              telemetry.trackEvent('cursor-betrayal', 'User clicked swapped Accept button');
+              setShowBackModal(true);
+            } else {
+              telemetry.trackEvent('cursor-betrayal', 'User clicked real Accept button');
+              setShowConfetti(true);
+              setTimeout(() => setShowConfetti(false), 2000);
+            }
+          }}
+        >
+          {labelsSwapped ? 'Decline All' : 'Accept All'}
+        </button>
+      </div>
+      
+      {/* Label-swapped Reject Button */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: '120px',
+          left: 'calc(50% + 150px)',
+          zIndex: 1000
+        }}
+        onMouseEnter={handleSwapLabels}
+      >
+        <button
+          className="btn-hostile"
+          style={{
+            background: labelsSwapped ? '#00ff00' : '#ff0000',
+            color: '#000',
+            padding: '15px 40px',
+            fontSize: '18px',
+            border: '4px solid #fff',
+            cursor: 'pointer'
+          }}
+          onClick={() => {
+            if (labelsSwapped) {
+              telemetry.trackEvent('cursor-betrayal', 'User clicked swapped Reject button');
+              setShowConfetti(true);
+              setTimeout(() => setShowConfetti(false), 2000);
+            } else {
+              setShowBackModal(true);
+            }
+          }}
+        >
+          {labelsSwapped ? 'Accept All' : 'Reject All'}
+        </button>
+      </div>
+      
+      {/* Tiny Moving Hitbox Button */}
+      {tinyHitboxVisible && (
+        <button
+          className="tiny-hitbox-btn"
+          style={{
+            position: 'fixed',
+            left: `${tinyHitboxPos.x}%`,
+            top: `${tinyHitboxPos.y}%`,
+            width: '20px',
+            height: '20px',
+            padding: '0',
+            fontSize: '8px',
+            background: '#ffff00',
+            color: '#000',
+            border: '2px solid #ff0000',
+            borderRadius: '50%',
+            cursor: 'pointer',
+            zIndex: 999,
+            transition: 'all 0.3s ease'
+          }}
+          onClick={() => {
+            telemetry.trackEvent('tiny-hitbox', 'Miracle click on tiny button');
+            alert('You actually clicked it? Impressive. This means nothing.');
+            setTinyHitboxVisible(false);
+          }}
+        >
+          ×
+        </button>
+      )}
+      
+      {/* Disappearing Button */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: '180px',
+          right: '30px',
+          zIndex: 1000
+        }}
+      >
+        {disappearingBtnVisible ? (
+          <button
+            className="btn-hostile disappearing-btn"
+            style={{
+              background: '#ff00ff',
+              color: '#fff',
+              padding: '10px 20px',
+              fontSize: '14px',
+              opacity: '1',
+              transition: 'opacity 0.5s ease'
+            }}
+            onMouseEnter={() => {
+              if (chaos.chance(50)) {
+                setDisappearingBtnVisible(false);
+                setTimeout(() => setDisappearingBtnVisible(true), chaos.range(1000, 3000));
+              }
+            }}
+            onClick={() => {
+              telemetry.trackEvent('disappearing-btn', 'User managed to click');
+              setCurrentPage('wizard');
+            }}
+          >
+            Important Button
+          </button>
+        ) : (
+          <div
+            style={{
+              width: '120px',
+              height: '44px',
+              border: '2px dashed #666',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#666',
+              fontSize: '10px'
+            }}
+          >
+            Button will return...
+          </div>
+        )}
+      </div>
+      
+      {/* Ghost Button - Faint and moving */}
+      <button
+        className="ghost-btn"
+        style={{
+          position: 'fixed',
+          left: '20px',
+          top: '50%',
+          transform: `translate(${ghostButtonPos.x}px, ${ghostButtonPos.y}px)`,
+          background: 'rgba(255,255,255,0.1)',
+          color: 'rgba(255,255,255,0.3)',
+          padding: '8px 16px',
+          fontSize: '12px',
+          border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          zIndex: 998
+        }}
+        onClick={() => {
+          telemetry.trackEvent('ghost-btn', 'User clicked ghost button');
+          // Does nothing useful
+          setGhostButtonPos({ x: chaos.range(-100, 100), y: chaos.range(-100, 100) });
+        }}
+      >
+        Click if you can see this
+      </button>
       
       {/* Confetti overlay */}
       {renderConfetti()}
