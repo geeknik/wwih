@@ -50,6 +50,9 @@ class RageTelemetry {
   }
   
   private init(): void {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     // Track page views
     this.trackPageView(window.location.pathname || 'home');
     
