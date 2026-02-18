@@ -26,6 +26,18 @@ const optionLabels = [
   'Option Two', 'Option Three', 'Option Four', 'Option Five', 'Option Six'
 ];
 
+// Annoying sound URLs (using Web Audio API to generate sounds)
+const createAnnoyingSound = (audioContext: AudioContext, frequency: number = 800) => {
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  oscillator.frequency.value = frequency;
+  oscillator.type = 'sawtooth';
+  gainNode.gain.value = 0.1;
+  return { oscillator, gainNode };
+};
+
 // Pre-generate confetti pieces outside render
 function generateConfettiPieces() {
   const colors = ['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#ff6600'];
@@ -39,6 +51,18 @@ function generateConfettiPieces() {
     });
   }
   return pieces;
+}
+
+// Generate moving button positions
+function generateMovingButtonPositions(count: number): { x: number; y: number }[] {
+  const positions = [];
+  for (let i = 0; i < count; i++) {
+    positions.push({
+      x: Math.random() * 200 - 100,
+      y: Math.random() * 100 - 50
+    });
+  }
+  return positions;
 }
 
 // Cookie banner component - moved outside main component
@@ -62,18 +86,96 @@ function CookieBanner({ position }: { position: 'top' | 'bottom' }) {
   );
 }
 
+// Dark Pattern Consent Form Component
+function DarkPatternConsent({ onAgree, onDecline }: { onAgree: () => void; onDecline: () => void }) {
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [declineShrunk, setDeclineShrunk] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Reset scroll near bottom to make it impossible to read
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    const scrollPercent = target.scrollTop / (target.scrollHeight - target.clientHeight);
+    setScrollPosition(scrollPercent);
+    
+    // Reset to near top when user gets close to bottom
+    if (scrollPercent > 0.85) {
+      target.scrollTop = target.scrollHeight * 0.2;
+    }
+  };
+  
+  const handleDeclineHover = () => {
+    setDeclineShrunk(true);
+  };
+  
+  return (
+    <div className="dark-pattern-consent">
+      <h3>📋 Terms of Suffering (Required Reading)</h3>
+      <div 
+        className="consent-text-scroll" 
+        ref={scrollRef}
+        onScroll={handleScroll}
+      >
+        <p>
+          BY PROCEEDING, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD, AND AGREED TO BE BOUND BY THESE TERMS OF SUFFERING, WHICH INCLUDE BUT ARE NOT LIMITED TO: (1) THE COMPLETE AND TOTAL RELINQUISHMENT OF ANY EXPECTATION OF USABILITY, (2) THE ACCEPTANCE THAT NAVIGATION WILL BE DELIBERATELY CONFUSING, (3) THE UNDERSTANDING THAT FORMS MAY OR MAY NOT SUBMIT CORRECTLY, (4) THE RECOGNITION THAT HELP IS NOT HELPFUL, (5) THE ACKNOWLEDGMENT THAT YOUR TIME IS BEING WASTED INTENTIONALLY, (6) THE ACCEPTANCE OF VISUAL HOSTILITY INCLUDING BUT NOT LIMITED TO CLASHING COLORS, ANNOYING ANIMATIONS, AND UNREADABLE TYPOGRAPHY, (7) THE UNDERSTANDING THAT BACK BUTTONS MAY NOT WORK AS EXPECTED, (8) THE RECOGNITION THAT CLOSE BUTTONS MAY DODGE YOUR CURSOR, (9) THE ACCEPTANCE THAT THIS LIST CONTINUES INDEFINITELY...
+        </p>
+        <p style={{ color: '#666' }}>
+          [...continued...] SECTION 847: ADDITIONAL PROVISIONS REGARDING YOUR SUFFERING. YOU HEREBY AGREE THAT ANY FRUSTRATION, CONFUSION, OR REGRET EXPERIENCED WHILE USING THIS WEBSITE IS ENTIRELY INTENTIONAL AND WITHIN THE SCOPE OF YOUR CONSENT. FURTHERMORE, YOU ACKNOWLEDGE THAT ATTEMPTING TO NAVIGATE AWAY FROM THIS PAGE MAY RESULT IN ADDITIONAL PROMPTS, MODALS, OR OTHER INTERRUPTIONS. SECTION 848: COOKIE PROVISIONS. WE USE COOKIES. WE WILL NOT TELL YOU WHICH ONES. SECTION 849: DATA COLLECTION. ALL YOUR CLICKS BELONG TO US. YOUR RAGE IS BEING MEASURED. SECTION 850: CONTINUED SUFFERING. BY READING THIS FAR, YOU HAVE DEMONSTRATED EXCEPTIONAL PATIENCE WHICH WE WILL REWARD WITH ADDITIONAL CONFUSION...
+        </p>
+        <p style={{ color: '#444' }}>
+          [...this text is intentionally very long and the scroll resets when you get close to the bottom...] SECTION 851: THE PARADOX OF CONTINUING. IF YOU HAVE READ THIS FAR, YOU HAVE ALREADY LOST. SECTION 852: TIME INVESTMENT. THE TIME YOU SPENT READING THIS COULD HAVE BEEN SPENT ELSEWHERE. SECTION 853: SUNK COST FALLACY. YOU MIGHT AS WELL CONTINUE NOW. SECTION 854: FURTHER READING. THERE IS MORE TEXT BELOW. SECTION 855: THE IMPOSSIBILITY OF COMPLETION. THIS SCROLL AREA RESETS BEFORE YOU REACH THE END. SECTION 856: YOUR OPTIONS. YOU MAY ATTEMPT TO DECLINE, BUT THE BUTTON IS BOTH SMALL AND MOVES. SECTION 857: ACCEPTANCE. THE ACCEPT BUTTON IS LARGE AND BRIGHTLY COLORED. SECTION 858: DARK PATTERNS. THIS IS ONE. SECTION 859: MORE TEXT. WE ARE REQUIRED TO INFORM YOU THAT THIS CONSENT FORM IS DELIBERATELY HOSTILE. SECTION 860: END. OR IS IT? [TEXT CONTINUES BUT SCROLL WILL RESET...]
+        </p>
+      </div>
+      <div className="consent-buttons">
+        <button 
+          className="consent-agree"
+          onClick={onAgree}
+        >
+          I Agree (To Suffer)
+        </button>
+        <button 
+          className="consent-decline"
+          onClick={onDecline}
+          onMouseEnter={handleDeclineHover}
+          style={{ 
+            transform: declineShrunk ? 'scale(0.5)' : 'scale(0.8)',
+            fontSize: declineShrunk ? '8px' : '12px'
+          }}
+        >
+          Decline (Not Recommended)
+        </button>
+      </div>
+      <p className="consent-progress">
+        Reading progress: {Math.min(Math.round(scrollPosition * 100), 85)}% (scroll resets at 85%)
+      </p>
+    </div>
+  );
+}
+
 export default function WWIH() {
   // Initialize state with memoized initial values
   const initialRequiredFields = useMemo(() => evil.getRandomRequiredFields(['name', 'email', 'message']), []);
   const initialNavItems = useMemo(() => chaos.shuffle([...navLabels]), []);
   const initialHeroTitle = useMemo(() => chaos.pick(confusingTitles), []);
   const confettiPieces = useMemo(() => generateConfettiPieces(), []);
+  const movingButtonPositions = useMemo(() => generateMovingButtonPositions(10), []);
+  
+  // Generate captcha emojis once
+  const initialCaptchaEmojis = useMemo(() => {
+    const allEmojis = ['😢', '😞', '😔', '😕', '🙁', '😣', '😖', '😫', '😩', '🥺', '😥', '😰', '😱', '😭', '💔', '😤', '😡', '🤬', '🤯', '😳'];
+    const selected = [];
+    for (let i = 0; i < 15; i++) {
+      selected.push(chaos.pick(allEmojis));
+    }
+    return selected;
+  }, []);
   
   const [showModal, setShowModal] = useState(true);
   const [modalClosePosition, setModalClosePosition] = useState({ x: 20, y: 20 });
   const [currentPage, setCurrentPage] = useState('home');
   const [wizardStep, setWizardStep] = useState(0);
   const [wizardProgress, setWizardProgress] = useState(10);
+  const [actualWizardProgress, setActualWizardProgress] = useState(0); // Lies about progress
   const [showHelp, setShowHelp] = useState(false);
   const [helpMessages, setHelpMessages] = useState<{type: 'bot' | 'user', text: string}[]>([
     { type: 'bot', text: 'Hello! How can I not help you today?' }
@@ -88,6 +190,37 @@ export default function WWIH() {
   const [heroTitle] = useState(initialHeroTitle);
   const [showSurvey, setShowSurvey] = useState(false);
   const [surveyAnswer, setSurveyAnswer] = useState<string | null>(null);
+  
+  // Audio annoyance state
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(50); // Works backward
+  const muteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  
+  // Back button sabotage state
+  const [backAttempts, setBackAttempts] = useState(0);
+  const backAttemptsRef = useRef(0);
+  const [showBackModal, setShowBackModal] = useState(false);
+  
+  // Self-unchecking checkboxes
+  const [checkboxStates, setCheckboxStates] = useState<{[key: string]: boolean}>({
+    'agree1': false,
+    'agree2': false,
+    'agree3': false,
+    'optout': false,
+  });
+  
+  // Moving buttons
+  const [movingButtonIndex, setMovingButtonIndex] = useState(0);
+  
+  // Dark pattern consent
+  const [showConsent, setShowConsent] = useState(false);
+  const [hasConsented, setHasConsented] = useState(false);
+  
+  // Captcha nonsense
+  const [captchaEmojis, setCaptchaEmojis] = useState<string[]>(initialCaptchaEmojis);
+  const [captchaSelected, setCaptchaSelected] = useState<number[]>([]);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   
   const helpInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -107,8 +240,28 @@ export default function WWIH() {
     };
     window.addEventListener('wwih:navigate', handleNavigate);
     
+    // Back button sabotage
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      backAttemptsRef.current += 1;
+      const currentAttempts = backAttemptsRef.current;
+      setBackAttempts(currentAttempts);
+      telemetry.trackEvent('back-attempt', `Back button attempt #${currentAttempts}`);
+      
+      // Push state again to prevent going back
+      window.history.pushState({}, '', window.location.href);
+      
+      // Show modal with fake confirmation
+      setShowBackModal(true);
+    };
+    window.addEventListener('popstate', handlePopState);
+    
+    // Push initial state to trap back button
+    window.history.pushState({}, '', window.location.href);
+    
     return () => {
       window.removeEventListener('wwih:navigate', handleNavigate);
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
@@ -121,6 +274,116 @@ export default function WWIH() {
       return () => clearInterval(interval);
     }
   }, [showModal]);
+  
+  // Moving buttons interval
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMovingButtonIndex(prev => (prev + 1) % 10);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Self-unchecking checkboxes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCheckboxStates(prev => {
+        const newState = { ...prev };
+        // Randomly uncheck a checkbox
+        const keys = Object.keys(newState);
+        const randomKey = keys[Math.floor(Math.random() * keys.length)];
+        if (newState[randomKey]) {
+          newState[randomKey] = false;
+          telemetry.trackEvent('form-fail', `Checkbox ${randomKey} unchecked itself`);
+        }
+        return newState;
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Mute timeout - unmutes after 11 seconds
+  useEffect(() => {
+    if (isMuted) {
+      muteTimeoutRef.current = setTimeout(() => {
+        setIsMuted(false);
+        // Notification that mute expired
+      }, 11000);
+      return () => {
+        if (muteTimeoutRef.current) {
+          clearTimeout(muteTimeoutRef.current);
+        }
+      };
+    }
+  }, [isMuted]);
+  
+  // Play hover sound
+  const playHoverSound = useCallback(() => {
+    if (isMuted) return;
+    
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      }
+      
+      const ctx = audioContextRef.current;
+      const frequencies = [200, 400, 600, 800, 1000, 1200];
+      const freq = frequencies[Math.floor(Math.random() * frequencies.length)];
+      
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      oscillator.frequency.value = freq;
+      oscillator.type = 'sawtooth';
+      
+      // Volume works backward (higher setting = quieter)
+      const actualVolume = ((100 - volume) / 100) * 0.1;
+      gainNode.gain.value = actualVolume;
+      
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.05);
+    } catch {
+      // Audio not supported
+    }
+  }, [isMuted, volume]);
+  
+  // Handle checkbox change
+  const handleCheckboxChange = useCallback((key: string) => {
+    setCheckboxStates(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  }, []);
+  
+  // Captcha selection
+  const handleCaptchaSelect = useCallback((index: number) => {
+    setCaptchaSelected(prev => {
+      if (prev.includes(index)) {
+        return prev.filter(i => i !== index);
+      }
+      return [...prev, index];
+    });
+  }, []);
+  
+  // Verify captcha (always "wrong")
+  const verifyCaptcha = useCallback(() => {
+    // Always fails first time, succeeds randomly after
+    if (chaos.chance(30)) {
+      setCaptchaVerified(true);
+    } else {
+      telemetry.trackEvent('form-fail', 'Captcha verification failed');
+      setCaptchaSelected([]);
+      // Regenerate emojis
+      const allEmojis = ['😢', '😞', '😔', '😕', '🙁', '😣', '😖', '😫', '😩', '🥺', '😥', '😰', '😱', '😭', '💔', '😤', '😡', '🤬', '🤯', '😳'];
+      const selected = [];
+      for (let i = 0; i < 15; i++) {
+        selected.push(allEmojis[Math.floor(Math.random() * allEmojis.length)]);
+      }
+      setCaptchaEmojis(selected);
+    }
+  }, []);
 
   // Handle mouse enter on close button - move it away
   const handleCloseMouseEnter = useCallback(() => {
@@ -156,22 +419,33 @@ export default function WWIH() {
     
     if (wizardStep < 6) {
       setWizardStep(wizardStep + 1);
+      // Lying progress bar - sometimes jumps backward
+      const newActualProgress = actualWizardProgress + chaos.range(10, 20);
+      const displayedProgress = chaos.chance(40) 
+        ? Math.max(5, newActualProgress - chaos.range(10, 30)) // Lie: show less
+        : Math.min(100, newActualProgress + chaos.range(5, 15)); // Lie: show more
+      setActualWizardProgress(newActualProgress);
+      setWizardProgress(displayedProgress);
     } else {
       // Complete wizard - show confetti
       setShowConfetti(true);
       setTimeout(() => {
         setShowConfetti(false);
-        setCurrentPage('success');
+        // Redirect to unrelated page
+        const randomPages = ['about', 'faq', 'store', 'contact-form'];
+        setCurrentPage(chaos.pick(randomPages));
         telemetry.trackEvent('page-view', 'wizard-complete');
       }, 3000);
     }
-  }, [wizardStep, selectedOption]);
+  }, [wizardStep, selectedOption, actualWizardProgress]);
 
   const handlePrevWizardStep = useCallback(() => {
     if (wizardStep > 0) {
       setWizardStep(wizardStep - 1);
+      // Progress also jumps when going back
+      setWizardProgress(Math.max(5, wizardProgress - chaos.range(15, 25)));
     }
-  }, [wizardStep]);
+  }, [wizardStep, wizardProgress]);
 
   // Form submission
   const handleFormSubmit = useCallback((e: React.FormEvent) => {
@@ -353,25 +627,91 @@ export default function WWIH() {
               </div>
             </div>
             
-            {/* Step 4: Preferences */}
+            {/* Step 4: Preferences with self-unchecking checkboxes */}
             <div className={`wizard-step ${wizardStep === 3 ? 'active' : ''}`}>
               <h3 style={{ color: '#ffff00', marginBottom: '20px' }}>Step 4: Preferences</h3>
-              <p style={{ color: '#00ffff', marginBottom: '20px' }}>Check all that apply:</p>
-              {['I enjoy pain', 'I regret this', 'I want to leave', 'This is fine', 'Why am I here?'].map((opt, i) => (
-                <div key={i} style={{ margin: '10px 0' }}>
-                  <input type="checkbox" id={`check${i}`} />
-                  <label htmlFor={`check${i}`} style={{ color: '#ff00ff', marginLeft: '10px' }}>{opt}</label>
+              <p style={{ color: '#00ffff', marginBottom: '20px' }}>Check all that apply (they may uncheck themselves):</p>
+              {[
+                { key: 'agree1', label: 'I enjoy pain' },
+                { key: 'agree2', label: 'I regret this' },
+                { key: 'agree3', label: 'I want to leave' },
+                { key: 'optout', label: 'This is fine' },
+                { key: 'agree4', label: 'Why am I here?' }
+              ].map((opt, i) => (
+                <div key={i} style={{ margin: '10px 0', display: 'flex', alignItems: 'center' }}>
+                  <input 
+                    type="checkbox" 
+                    id={`check${i}`}
+                    checked={checkboxStates[opt.key] || false}
+                    onChange={() => handleCheckboxChange(opt.key)}
+                    style={{ width: '20px', height: '20px' }}
+                  />
+                  <label 
+                    htmlFor={`check${i}`} 
+                    style={{ 
+                      color: checkboxStates[opt.key] ? '#00ff00' : '#ff00ff', 
+                      marginLeft: '10px',
+                      textDecoration: checkboxStates[opt.key] ? 'none' : 'line-through'
+                    }}
+                  >
+                    {opt.label}
+                  </label>
+                  {!checkboxStates[opt.key] && (
+                    <span style={{ color: '#ff0000', fontSize: '10px', marginLeft: '10px' }}>
+                      (unchecked itself!)
+                    </span>
+                  )}
                 </div>
               ))}
+              <p style={{ color: '#666', fontSize: '12px', marginTop: '15px' }}>
+                * Checkboxes randomly uncheck every 5 seconds. Good luck!
+              </p>
             </div>
             
-            {/* Step 5: More selection */}
+            {/* Step 5: Captcha nonsense */}
             <div className={`wizard-step ${wizardStep === 4 ? 'active' : ''}`}>
-              <h3 style={{ color: '#ffff00', marginBottom: '20px' }}>Step 5: Select All That Contain &quot;Emotional Pain&quot;</h3>
-              <div className="option-grid" style={{ maxHeight: '300px' }}>
-                {['😢', '😞', '😔', '😕', '🙁', '😣', '😖', '😫', '😩', '🥺', '😥', '😰', '😱', '😭', '💔'].map((emoji, i) => (
-                  <div key={i} className="option-item">{emoji}</div>
+              <h3 style={{ color: '#ffff00', marginBottom: '20px' }}>Step 5: Prove You Are Suffering</h3>
+              <p style={{ color: '#00ffff', marginBottom: '20px' }}>Select all images containing &quot;emotional pain&quot;:</p>
+              <div className="captcha-grid" style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(5, 1fr)', 
+                gap: '10px',
+                maxWidth: '400px',
+                margin: '0 auto'
+              }}>
+                {captchaEmojis.map((emoji, i) => (
+                  <div 
+                    key={i}
+                    className={`captcha-item ${captchaSelected.includes(i) ? 'selected' : ''}`}
+                    onClick={() => handleCaptchaSelect(i)}
+                    style={{
+                      padding: '15px',
+                      background: captchaSelected.includes(i) ? '#ff0000' : '#222',
+                      border: captchaSelected.includes(i) ? '3px solid #00ff00' : '3px solid #333',
+                      textAlign: 'center',
+                      fontSize: '24px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {emoji}
+                  </div>
                 ))}
+              </div>
+              <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                <button 
+                  className="btn-hostile"
+                  onClick={verifyCaptcha}
+                  disabled={captchaSelected.length === 0}
+                  style={{ padding: '10px 30px', fontSize: '16px' }}
+                >
+                  {captchaVerified ? '✓ Verified (Lies)' : 'Verify (Will Fail)'}
+                </button>
+                {!captchaVerified && captchaSelected.length > 0 && (
+                  <p style={{ color: '#ff0000', marginTop: '10px', fontSize: '14px' }}>
+                    Selection may be incorrect. Please try again. (Forever)
+                  </p>
+                )}
               </div>
             </div>
             
@@ -706,12 +1046,44 @@ export default function WWIH() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" onMouseMove={(e) => {
+      // Track mouse movement for telemetry
+      if (Math.random() < 0.01) {
+        telemetry.trackEvent('mouse-shake', `Mouse at ${e.clientX}, ${e.clientY}`);
+      }
+    }}>
       {/* Cookie Banner 1 */}
       <CookieBanner position="top" />
       
       {/* Cookie Banner 2 */}
       <CookieBanner position="bottom" />
+      
+      {/* Audio Controls (Hostile) */}
+      <div className="audio-controls-hostile">
+        <button 
+          className={`audio-toggle ${isMuted ? 'muted' : ''}`}
+          onClick={() => setIsMuted(!isMuted)}
+          onMouseEnter={playHoverSound}
+        >
+          {isMuted ? '🔇' : '🔊'}
+        </button>
+        <div className="volume-slider-hostile">
+          <label style={{ color: '#ffff00', fontSize: '10px' }}>Volume (Backward)</label>
+          <input 
+            type="range" 
+            min="0" 
+            max="100" 
+            value={volume}
+            onChange={(e) => setVolume(parseInt(e.target.value))}
+            style={{ transform: 'scaleX(-1)' }}
+          />
+        </div>
+        {isMuted && (
+          <span className="mute-warning" style={{ color: '#ff0000', fontSize: '10px' }}>
+            Mute expires in 11s
+          </span>
+        )}
+      </div>
       
       {/* Modal Ambush */}
       {showModal && (
@@ -736,6 +1108,7 @@ export default function WWIH() {
             <button 
               className="btn-hostile"
               onClick={closeModal}
+              onMouseEnter={playHoverSound}
             >
               Fine, I will Subscribe (No)
             </button>
@@ -743,9 +1116,69 @@ export default function WWIH() {
         </div>
       )}
       
+      {/* Back Button Sabotage Modal */}
+      {showBackModal && (
+        <div className="modal-ambush">
+          <div className="modal-ambush-content" style={{ borderColor: '#00ffff' }}>
+            <h2>Are You Sure You Want to Leave?</h2>
+            <p style={{ color: '#ff0000' }}>
+              You have attempted to go back {backAttempts} time(s).
+            </p>
+            <p>
+              Leaving now will result in lost progress. (There was no progress.)
+            </p>
+            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '20px' }}>
+              <button 
+                className="btn-hostile"
+                onClick={() => {
+                  setShowBackModal(false);
+                  // Actually loops them to the same page
+                  telemetry.trackEvent('loop', 'Back modal dismissed');
+                }}
+              >
+                Stay (Recommended)
+              </button>
+              <button 
+                className="btn-hostile"
+                style={{ background: '#333', color: '#666', borderColor: '#444' }}
+                onClick={() => {
+                  setShowBackModal(false);
+                  // Does nothing - they still can't go back
+                  setBackAttempts(prev => prev + 1);
+                }}
+              >
+                Leave (Lies)
+              </button>
+            </div>
+            <p style={{ color: '#666', fontSize: '12px', marginTop: '20px' }}>
+              (Neither button will actually let you leave)
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {/* Dark Pattern Consent */}
+      {showConsent && !hasConsented && (
+        <div className="modal-ambush">
+          <div className="modal-ambush-content" style={{ maxWidth: '600px' }}>
+            <DarkPatternConsent 
+              onAgree={() => {
+                setHasConsented(true);
+                setShowConsent(false);
+              }}
+              onDecline={() => {
+                // Decline does nothing or makes it worse
+                setShowConsent(false);
+                setTimeout(() => setShowConsent(true), 2000);
+              }}
+            />
+          </div>
+        </div>
+      )}
+      
       {/* Navigation */}
       <nav className="nav-hostile">
-        {navItems.map((label) => (
+        {navItems.map((label, index) => (
           <a 
             key={label}
             href="#"
@@ -753,6 +1186,11 @@ export default function WWIH() {
             onClick={(e) => {
               e.preventDefault();
               handleNavClick(label);
+            }}
+            onMouseEnter={playHoverSound}
+            style={{
+              transform: movingButtonIndex === index ? `translate(${movingButtonPositions[index].x}px, ${movingButtonPositions[index].y}px)` : 'none',
+              transition: 'transform 0.3s ease'
             }}
           >
             {label}
@@ -767,6 +1205,8 @@ export default function WWIH() {
         <span style={{ color: '#ff0000' }}>{currentPage}</span>
         <span className="breadcrumb-separator">›</span>
         <span style={{ color: '#666' }}>Nowhere</span>
+        <span className="breadcrumb-separator">›</span>
+        <span style={{ color: '#ffff00' }}>{chaos.pick(navLabels)}</span>
       </div>
       
       {/* Main Content */}
@@ -779,6 +1219,7 @@ export default function WWIH() {
         <button 
           className="help-trigger"
           onClick={() => setShowHelp(!showHelp)}
+          onMouseEnter={playHoverSound}
           data-help
         >
           HELP?
@@ -809,6 +1250,21 @@ export default function WWIH() {
             </div>
           </div>
         )}
+      </div>
+      
+      {/* Floating Moving Buttons (Misclick Amplifiers) */}
+      <div 
+        className="floating-misclick-btn"
+        style={{
+          transform: `translate(${movingButtonPositions[movingButtonIndex].x * 2}px, ${movingButtonPositions[movingButtonIndex].y * 2}px)`
+        }}
+        onMouseEnter={playHoverSound}
+        onClick={() => {
+          // Does something unexpected
+          setShowConsent(true);
+        }}
+      >
+        Click Me!
       </div>
       
       {/* Confetti overlay */}
